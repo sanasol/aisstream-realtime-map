@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script type="text/javascript"
+        src="https://cdn.jsdelivr.net/gh/hosuaby/Leaflet.SmoothMarkerBouncing@v3.0.3/dist/bundle.js"
+        crossorigin="anonymous"></script>
+<div id="map" style="width: 100vw;height: 100vh;"></div>
+<script>
+    var map = L.map('map', {
+        center: [42.765301666666666, 131.86862],
+        zoom: 7
+    });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    let markers = {};
+    setInterval(() => {
+        fetch('ships.json').then((response) => response.json()).then(data => {
+            let gradient = true;
+            for (const datum in data) {
+                let ship = data[datum]
+                if (markers[datum]) {
+                    let latlng = markers[datum].getLatLng()
+                    var newlatlng = L.latLng(ship.lat, ship.lon);
+                    if (latlng.lat !== ship.lat || latlng.lng !== ship.lon) {
+                        console.log('update ship', latlng.distanceTo(newlatlng), datum, markers[datum].getLatLng())
+
+                        Toastify({
+                            text: `${datum} moved ${parseInt(latlng.distanceTo(newlatlng))} meters`,
+                            duration: 3000,
+                            style: gradient ? {
+                                background: "linear-gradient(to right, #00b09b, #96c93d)",
+                            } : {},
+                            onClick() {
+                                markers[datum].bounce(3)
+                            }
+                        }).showToast();
+
+                        if (gradient) {
+                            gradient = false
+                        } else {
+                            gradient = true
+                        }
+                        markers[datum].setLatLng([ship.lat, ship.lon])
+                        markers[datum].bounce(3)
+                    }
+                } else {
+                    console.log('add ship', datum)
+                    markers[datum] = L.marker([ship.lat, ship.lon], {
+                        title: datum
+                    }).addTo(map);
+                }
+            }
+        })
+    }, 5000);
+
+</script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
